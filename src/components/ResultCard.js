@@ -1,29 +1,35 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { Card, Text } from 'react-native-paper';
+import { StyleSheet } from 'react-native';
 
 const ResultCard = ({ result }) => {
+  if (!result || typeof result !== 'object') {
+    console.warn('❗ Skipping invalid result:', result);
+    return null;
+  }
+
   return (
-    <View style={styles.card}>
-      <Text style={styles.result}>{result.result}</Text>
-      <Text style={styles.date}>{new Date(result.timestamp).toLocaleString()}</Text>
-      <Text style={styles.method}>Entry Method: {result.entry_method}</Text>
-      {result.notes ? <Text style={styles.notes}>Notes: {result.notes}</Text> : null}
-    </View>
+    <Card style={styles.card}>
+      <Card.Content>
+        <Text style={styles.result}>{result.result ?? 'Unknown'}</Text>
+        <Text style={styles.date}>
+          {result.timestamp ? new Date(result.timestamp).toLocaleString() : ''}
+        </Text>
+        <Text style={styles.method}>Entry Method: {result.entry_method ?? 'N/A'}</Text>
+        {result.notes ? (
+          <Text style={styles.notes}>Notes: {result.notes}</Text>
+        ) : null}
+      </Card.Content>
+    </Card>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
     marginVertical: 8,
     marginHorizontal: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: 12,
+    elevation: 2, // For Android shadow
   },
   result: {
     fontSize: 20,

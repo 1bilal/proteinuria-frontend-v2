@@ -1,19 +1,13 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BASE_URL from './api';
+import api, { BASE_URL } from './api'; // Should export configured Axios instance
 
-const api = axios.create({
-  baseURL: BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
 
-// Utility function to retrieve the token from storage
+// --- Utility: Get stored token ---
 const getToken = async () => {
   try {
     const token = await AsyncStorage.getItem('auth_token');
-    console.log('Retrieved token from storage:', token);  // Debugging
+    console.log('Retrieved token from storage:', token);
     return token;
   } catch (error) {
     console.error('Error getting token from storage', error);
@@ -21,25 +15,23 @@ const getToken = async () => {
   }
 };
 
-// Setting up the Authorization header for authenticated requests
+// --- Attach token to all requests automatically ---
 api.interceptors.request.use(
-  async (config) => {
+  async config => {
     const token = await getToken();
     if (token) {
-      config.headers.Authorization = `Token ${token}`; // Ensuring Authorization header is added
-      console.log('Attached auth token to request:', token); // Debugging
-    } else {
-      console.log('No auth token found');
+      config.headers.Authorization = `Token ${token}`;
+      console.log('Attached auth token to request');
     }
     return config;
   },
-  (error) => {
+  error => {
     console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
-// POST request to login user
+// --- Login user and store token ---
 export const loginUser = async (email, password) => {
   try {
     const response = await axios.post(`${BASE_URL}accounts/token/`, {
@@ -49,39 +41,39 @@ export const loginUser = async (email, password) => {
 
     const { token } = response.data;
 
-    // Save the token to AsyncStorage for future authenticated requests
-    await AsyncStorage.setItem('auth_token', token);
+    if (!token) throw new Error('No token returned from backend');
 
+    await AsyncStorage.setItem('auth_token', token);
     return token;
   } catch (error) {
     console.error('Login error:', error.response?.data || error.message);
     throw error;
   }
 };
-// Fetching test results from the backend
+
+// --- Fetch test results ---
 export const getTestResults = async () => {
   try {
     const response = await api.get('test-results/');
     return response.data;
   } catch (error) {
-    console.error('Error fetching test results:', error);
+    console.error('Error fetching test results:', error.response?.data || error.message);
     throw error;
   }
 };
 
-// Posting new test result to the backend
+// --- Submit test result (manual or auto) ---
 export const postTestResult = async (testResultData, isMultipart = false) => {
   try {
     const headers = isMultipart
       ? { 'Content-Type': 'multipart/form-data' }
       : undefined;
 
-    // For JSON (manual entry), add entry_method manually
     const dataToSend = isMultipart
-      ? testResultData // already includes entry_method = 'auto' and image
+      ? testResultData
       : {
           ...testResultData,
-          entry_method: 'manual',  // Ensure 'manual' is added for non-auto methods
+          entry_method: 'manual',
         };
 
     const response = await api.post('test-results/', dataToSend, { headers });
@@ -92,7 +84,7 @@ export const postTestResult = async (testResultData, isMultipart = false) => {
   }
 };
 
-// Log out by removing the token from AsyncStorage
+// --- Logout user ---
 export const logoutUser = async () => {
   try {
     await AsyncStorage.removeItem('auth_token');

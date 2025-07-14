@@ -1,8 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { View, TextInput, Button, Alert, ScrollView } from 'react-native';
+import React, { useEffect, useState, useContext } from 'react';
+import { View, Alert, ScrollView, StyleSheet } from 'react-native';
+import {
+  TextInput as PaperTextInput,
+  Button as PaperButton,
+  ActivityIndicator,
+  Text,
+} from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import BASE_URL from '../services/api';
+import { LoadingContext, SnackbarContext } from '../../App';
 
 const ProfileScreen = ({ navigation }) => {
   const [profile, setProfile] = useState({
@@ -14,11 +22,12 @@ const ProfileScreen = ({ navigation }) => {
     lga: '',
     dob: '',
   });
-  const [loading, setLoading] = useState(false);
+  const { isLoading, setIsLoading } = useContext(LoadingContext);
+  const { showSnackbar } = useContext(SnackbarContext);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      setLoading(true);
+      setIsLoading(true);
       try {
         const token = await AsyncStorage.getItem('auth_token');
         if (!token) {
@@ -31,9 +40,9 @@ const ProfileScreen = ({ navigation }) => {
         });
         setProfile(response.data);
       } catch (error) {
-        Alert.alert('Error', 'Failed to load profile');
+        showSnackbar('Failed to load profile');
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
@@ -45,7 +54,7 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const handleSave = async () => {
-    setLoading(true);
+    setIsLoading(true);
     try {
       const token = await AsyncStorage.getItem('auth_token');
       if (!token) {
@@ -53,64 +62,103 @@ const ProfileScreen = ({ navigation }) => {
         return;
       }
 
-      await axios.patch(`${BASE_URL}/profile/`, profile, {
+      await axios.patch(`${BASE_URL}accounts/profile/`, profile, {
         headers: { Authorization: `Token ${token}` },
       });
-      Alert.alert('Success', 'Profile updated successfully');
+      showSnackbar('Profile updated successfully!');
     } catch (error) {
-      Alert.alert('Error', 'Failed to update profile');
+      showSnackbar('Failed to update profile');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 20 }}>
-      <TextInput
-        placeholder="Email"
-        value={profile.email}
-        editable={false}
-        style={{ marginBottom: 10, borderBottomWidth: 1 }}
-      />
-      <TextInput
-        placeholder="First Name"
-        value={profile.first_name}
-        onChangeText={text => handleChange('first_name', text)}
-        style={{ marginBottom: 10, borderBottomWidth: 1 }}
-      />
-      <TextInput
-        placeholder="Last Name"
-        value={profile.last_name}
-        onChangeText={text => handleChange('last_name', text)}
-        style={{ marginBottom: 10, borderBottomWidth: 1 }}
-      />
-      <TextInput
-        placeholder="Sex"
-        value={profile.sex}
-        onChangeText={text => handleChange('sex', text)}
-        style={{ marginBottom: 10, borderBottomWidth: 1 }}
-      />
-      <TextInput
-        placeholder="State"
-        value={profile.state}
-        onChangeText={text => handleChange('state', text)}
-        style={{ marginBottom: 10, borderBottomWidth: 1 }}
-      />
-      <TextInput
-        placeholder="LGA"
-        value={profile.lga}
-        onChangeText={text => handleChange('lga', text)}
-        style={{ marginBottom: 10, borderBottomWidth: 1 }}
-      />
-      <TextInput
-        placeholder="Date of Birth (YYYY-MM-DD)"
-        value={profile.dob}
-        onChangeText={text => handleChange('dob', text)}
-        style={{ marginBottom: 20, borderBottomWidth: 1 }}
-      />
-      <Button title={loading ? "Saving..." : "Save Profile"} onPress={handleSave} disabled={loading} />
-    </ScrollView>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.header}>Profile Information</Text>
+        <PaperTextInput
+          label="Email"
+          value={profile.email}
+          editable={false}
+          mode="outlined"
+          style={styles.input}
+        />
+        <PaperTextInput
+          label="First Name"
+          value={profile.first_name}
+          onChangeText={text => handleChange('first_name', text)}
+          mode="outlined"
+          style={styles.input}
+        />
+        <PaperTextInput
+          label="Last Name"
+          value={profile.last_name}
+          onChangeText={text => handleChange('last_name', text)}
+          mode="outlined"
+          style={styles.input}
+        />
+        <PaperTextInput
+          label="Sex"
+          value={profile.sex}
+          onChangeText={text => handleChange('sex', text)}
+          mode="outlined"
+          style={styles.input}
+        />
+        <PaperTextInput
+          label="State"
+          value={profile.state}
+          onChangeText={text => handleChange('state', text)}
+          mode="outlined"
+          style={styles.input}
+        />
+        <PaperTextInput
+          label="LGA"
+          value={profile.lga}
+          onChangeText={text => handleChange('lga', text)}
+          mode="outlined"
+          style={styles.input}
+        />
+        <PaperTextInput
+          label="Date of Birth (YYYY-MM-DD)"
+          value={profile.dob}
+          onChangeText={text => handleChange('dob', text)}
+          mode="outlined"
+          style={styles.input}
+        />
+        <PaperButton
+          mode="contained"
+          onPress={handleSave}
+          loading={isLoading}
+          disabled={isLoading}
+          style={styles.button}>
+          Save Profile
+        </PaperButton>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  container: {
+    padding: 20,
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  input: {
+    marginBottom: 10,
+  },
+  button: {
+    marginTop: 20,
+  },
+});
 
 export default ProfileScreen;

@@ -1,15 +1,25 @@
-// src/services/api.js
+// services/api.js
 import axios from 'axios';
-const BASE_URL = 'http://192.168.43.137:8000/api/';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const registerUser = async (data) => {
-  const response = await axios.post(`${BASE_URL}accounts/signup/`, data);
-  console.log("Submitting data to API:", data);
-  return response.data;
-};
+const BASE_URL = 'http://192.168.43.137:8000/api/v1/';
 
-export const getUserInfo = () => {
-  return axios.get(`${BASE_URL}/api/accounts/user/`);
-};
+const api = axios.create({
+  baseURL: BASE_URL,
+});
 
-export default BASE_URL;
+// Attach token to every request (safe for your own backend)
+api.interceptors.request.use(
+  async (config) => {
+    const token = await AsyncStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Token ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+export default api;
+export { BASE_URL };
+

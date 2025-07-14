@@ -1,11 +1,19 @@
-import React, { useState } from "react";
-import { View, Button, Image, Text, ActivityIndicator, Alert } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import { postTestResult } from "../services/authService";
+import React, { useState, useContext } from 'react';
+import { View, Image, Alert, StyleSheet } from 'react-native';
+import {
+  Button as PaperButton,
+  ActivityIndicator,
+  Text,
+} from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
+import { postTestResult } from '../services/testService';
+import { LoadingContext, SnackbarContext } from '../../App';
 
 const NewTestScreen = ({ navigation }) => {
   const [image, setImage] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  const { isLoading, setIsLoading } = useContext(LoadingContext);
+  const { showSnackbar } = useContext(SnackbarContext);
 
   const pickImage = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
@@ -27,42 +35,88 @@ const NewTestScreen = ({ navigation }) => {
   };
 
   const handleSubmit = async () => {
-    if (!image) return;
+    if (!image) {
+      showSnackbar('Please take a photo first.');
+      return;
+    }
 
     const formData = new FormData();
-    formData.append("image", {
+    formData.append('image', {
       uri: image,
-      name: "test.jpg",
-      type: "image/jpeg",
+      name: 'test.jpg',
+      type: 'image/jpeg',
     });
-    formData.append("entry_method", "auto");
+    formData.append('entry_method', 'auto');
 
+    // Debug output of FormData (text version)
+    console.log('📤 Submitting test with image:', image);
+
+    setIsLoading(true);
     try {
-      setUploading(true);
-      await postTestResult(formData, true);
-      Alert.alert("Success", "Test submitted successfully");
-      navigation.navigate("Home");
+      await postTestResult(formData, true); // Ensure second arg is true for multipart
+      showSnackbar('Test submitted successfully!');
+      navigation.navigate('Home');
     } catch (error) {
-      Alert.alert("Error", "Could not submit test");
+      console.error(
+        '❌ Error submitting test:',
+        error.response?.data || error.message || error,
+      );
+      showSnackbar('Failed to submit test. Please try again.');
     } finally {
-      setUploading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <Button title="Take a Photo of the Test Strip" onPress={pickImage} />
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <PaperButton mode="contained" onPress={pickImage} style={styles.button}>
+          Take a Photo of the Test Strip
+        </PaperButton>
 
-      {image && (
-        <>
-          <Image source={{ uri: image }} style={{ width: 300, height: 300, marginVertical: 20 }} />
-          <Button title="Submit Test" onPress={handleSubmit} disabled={uploading} />
-        </>
-      )}
-
-      {uploading && <ActivityIndicator size="large" style={{ marginTop: 20 }} />}
-    </View>
+        {image && (
+          <View style={styles.imageContainer}>
+            <Image source={{ uri: image }} style={styles.image} />
+            <PaperButton
+              mode="contained"
+              onPress={handleSubmit}
+              loading={isLoading}
+              disabled={isLoading}
+              style={styles.button}>
+              Submit Test
+            </PaperButton>
+          </View>
+        )}
+      </View>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  button: {
+    marginVertical: 10,
+    width: '80%',
+  },
+  imageContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  image: {
+    width: 300,
+    height: 300,
+    resizeMode: 'contain',
+    marginBottom: 20,
+  },
+});
 
 export default NewTestScreen;

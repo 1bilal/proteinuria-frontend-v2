@@ -1,50 +1,81 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator } from 'react-native';
-import { getTestResults } from './src/services/authService';  // Correct import path
+import React, { useEffect, useState, useContext } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { ActivityIndicator } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { getTestResults } from '../services/testService';
+import ResultCard from '../components/ResultCard';
+import { LoadingContext } from '../../App';
 
 const TestResultsScreen = () => {
   const [testResults, setTestResults] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { setIsLoading } = useContext(LoadingContext);
 
   useEffect(() => {
     const fetchTestResults = async () => {
+      setIsLoading(true);
       try {
         const data = await getTestResults();
-        setTestResults(data);
+
+        console.log('✅ Final test results:', JSON.stringify(data, null, 2));
+
+        const results = Array.isArray(data)
+          ? data
+          : Array.isArray(data.results)
+          ? data.results
+          : [];
+
+        setTestResults(results);
       } catch (err) {
+        console.error('❌ Error fetching test results:', err);
         setError('Failed to load test results.');
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
 
     fetchTestResults();
   }, []);
 
-  if (loading) {
-    return <ActivityIndicator size="large" color="#0000ff" />;
-  }
-
-  if (error) {
-    return <Text>{error}</Text>;
-  }
-
   return (
-    <View>
-      <Text>Test Results</Text>
-      <FlatList
-        data={testResults}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View>
-            <Text>{item.result}</Text>
-            <Text>{item.timestamp}</Text>
-          </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Text style={styles.header}>Test Results</Text>
+
+        {error ? (
+          <Text style={styles.error}>{error}</Text>
+        ) : testResults.length === 0 ? (
+          <Text>No test results yet.</Text>
+        ) : (
+          <FlatList
+            data={testResults}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => <ResultCard result={item} />}
+          />
         )}
-      />
-    </View>
+      </View>
+    </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  container: {
+    padding: 20,
+    flex: 1,
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  error: {
+    color: 'red',
+    fontSize: 16,
+  },
+});
 
 export default TestResultsScreen;

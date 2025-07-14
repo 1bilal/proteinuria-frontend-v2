@@ -1,84 +1,81 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, Button } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import BASE_URL from '../services/api';
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
+import { Text, Card } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const TestResultsScreen = ({ navigation }) => {
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchResults = async () => {
-      try {
-        const token = await AsyncStorage.getItem('auth_token');
-        if (!token) {
-          navigation.replace('Login');
-          return;
-        }
-
-        const response = await axios.get(`${BASE_URL}test-results/`, {
-          headers: { Authorization: `Token ${token}` },
-        });
-
-        setResults(response.data);
-      } catch (error) {
-        console.error('Error fetching test results:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchResults();
-  }, []);
-
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <Text style={styles.resultText}>Result: {item.result}</Text>
-      <Text style={styles.metaText}>Entry: {item.entry_method}</Text>
-      <Text style={styles.metaText}>Date: {new Date(item.created_at).toLocaleString()}</Text>
-    </View>
-  );
-
-  if (loading) {
-    return <ActivityIndicator size="large" style={{ marginTop: 40 }} />;
-  }
+const TestResultScreen = ({ route }) => {
+  const { result } = route.params;
 
   return (
-    <View style={styles.container}>
-      {results.length === 0 ? (
-        <Text style={styles.noDataText}>No test results found.</Text>
-      ) : (
-        <FlatList
-          data={results}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 20 }}
-        />
-      )}
-        <View style={{ marginVertical: 8 }} />
-        <Button title="New Test (Camera)" onPress={() => navigation.navigate("NewTest")} />
-        <View style={{ marginVertical: 8 }} />
-        <Button title="Submit Test Result (Manual)" onPress={() => navigation.navigate("SubmitResult")} />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <Card style={styles.card}>
+          <Card.Content>
+            <Text style={styles.header}>Test Result Details</Text>
+            <Text style={styles.label}>Result:</Text>
+            <Text style={styles.value}>{result.result}</Text>
+
+            <Text style={styles.label}>Entry Method:</Text>
+            <Text style={styles.value}>{result.entry_method}</Text>
+
+            <Text style={styles.label}>Date:</Text>
+            <Text style={styles.value}>
+              {new Date(result.timestamp).toLocaleString()}
+            </Text>
+
+            {result.notes && (
+              <>
+                <Text style={styles.label}>Notes:</Text>
+                <Text style={styles.value}>{result.notes}</Text>
+              </>
+            )}
+
+            {result.image && (
+              <>
+                <Text style={styles.label}>Image:</Text>
+                {/* You might want to display the image here, but it requires more complex handling */}
+                <Text style={styles.value}>
+                  Image available (not displayed)
+                </Text>
+              </>
+            )}
+          </Card.Content>
+        </Card>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  card: {
-    padding: 15,
-    marginBottom: 12,
-    borderRadius: 10,
-    backgroundColor: '#f3f4f6',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 2,
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
-  resultText: { fontSize: 18, fontWeight: 'bold' },
-  metaText: { fontSize: 14, color: '#555', marginTop: 4 },
-  noDataText: { fontSize: 16, textAlign: 'center', marginTop: 50, color: '#666' },
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  card: {
+    elevation: 2,
+    borderRadius: 10,
+    padding: 10,
+  },
+  header: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 10,
+  },
+  value: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
 });
 
-export default TestResultsScreen;
+export default TestResultScreen;
