@@ -3,33 +3,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import api, { BASE_URL } from './api'; // Should export configured Axios instance
 
 
-// --- Utility: Get stored token ---
-const getToken = async () => {
+
+
+// --- Register user ---
+export const registerUser = async (userData) => {
   try {
-    const token = await AsyncStorage.getItem('auth_token');
-    console.log('Retrieved token from storage:', token);
-    return token;
+    const response = await axios.post(`${BASE_URL}accounts/signup/`, userData);
+    return response.data;
   } catch (error) {
-    console.error('Error getting token from storage', error);
-    return null;
+    console.error('Registration error:', error.response?.data || error.message);
+    throw error;
   }
 };
-
-// --- Attach token to all requests automatically ---
-api.interceptors.request.use(
-  async config => {
-    const token = await getToken();
-    if (token) {
-      config.headers.Authorization = `Token ${token}`;
-      console.log('Attached auth token to request');
-    }
-    return config;
-  },
-  error => {
-    console.error('Request interceptor error:', error);
-    return Promise.reject(error);
-  }
-);
 
 // --- Login user and store token ---
 export const loginUser = async (email, password) => {
@@ -72,9 +57,9 @@ export const postTestResult = async (testResultData, isMultipart = false) => {
     const dataToSend = isMultipart
       ? testResultData
       : {
-          ...testResultData,
-          entry_method: 'manual',
-        };
+        ...testResultData,
+        entry_method: 'manual',
+      };
 
     const response = await api.post('test-results/', dataToSend, { headers });
     return response.data;

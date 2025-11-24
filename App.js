@@ -2,29 +2,11 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import AppNavigator from './src/navigation/AppNavigator';
 import { Provider as PaperProvider, DefaultTheme, ActivityIndicator, Portal, Snackbar } from 'react-native-paper';
-import { colors } from './src/styles/colors';
+import { theme } from './src/styles/theme';
 import React, { useState, createContext, useContext } from 'react';
+import { AuthProvider } from './src/context/AuthContext';
 
-export const LoadingContext = createContext();
-export const SnackbarContext = createContext();
-
-const theme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: colors.primary,
-    accent: colors.accent,
-    background: colors.background,
-    surface: colors.surface,
-    text: colors.text,
-    error: colors.error,
-    placeholder: colors.placeholder,
-    disabled: colors.disabled,
-    onSurface: colors.onSurface,
-    backdrop: colors.backdrop,
-    notification: colors.notification,
-  },
-};
+import { LoadingContext, SnackbarContext } from './src/context/GlobalContext';
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(false);
@@ -39,32 +21,34 @@ export default function App() {
   const onDismissSnackbar = () => setSnackbarVisible(false);
 
   return (
-    <PaperProvider theme={theme}>
-      <LoadingContext.Provider value={{ isLoading, setIsLoading }}>
-        <SnackbarContext.Provider value={{ showSnackbar }}>
-          <Portal.Host>
-            <AppNavigator />
-            {isLoading && (
-              <View style={styles.loadingOverlay}>
-                <ActivityIndicator animating={true} size="large" />
-              </View>
-            )}
-            <Snackbar
-              visible={snackbarVisible}
-              onDismiss={onDismissSnackbar}
-              duration={3000}
-              action={{
-                label: 'Dismiss',
-                onPress: () => {
-                  // Do something
-                },
-              }}>
-              {snackbarMessage}
-            </Snackbar>
-          </Portal.Host>
-        </SnackbarContext.Provider>
-      </LoadingContext.Provider>
-    </PaperProvider>
+    <AuthProvider>
+      <PaperProvider theme={theme}>
+        <LoadingContext.Provider value={{ isLoading, setIsLoading }}>
+          <SnackbarContext.Provider value={{ showSnackbar }}>
+            <Portal.Host>
+              <AppNavigator />
+              {isLoading && (
+                <View style={styles.loadingOverlay}>
+                  <ActivityIndicator animating={true} size="large" />
+                </View>
+              )}
+              <Snackbar
+                visible={snackbarVisible}
+                onDismiss={onDismissSnackbar}
+                duration={3000}
+                action={{
+                  label: 'Dismiss',
+                  onPress: () => {
+                    // Do something
+                  },
+                }}>
+                {snackbarMessage}
+              </Snackbar>
+            </Portal.Host>
+          </SnackbarContext.Provider>
+        </LoadingContext.Provider>
+      </PaperProvider>
+    </AuthProvider>
   );
 }
 

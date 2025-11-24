@@ -6,37 +6,53 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const TestResultScreen = ({ route }) => {
   const { result } = route.params;
 
+  const getResultColor = (res) => {
+    const lower = res?.toLowerCase() || '';
+    if (lower.includes('negative')) return '#4CAF50'; // Green
+    if (lower.includes('trace')) return '#FFC107'; // Amber
+    return '#E53935'; // Red
+  };
+
+  const resultColor = getResultColor(result.result);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <Card style={styles.card}>
-          <Card.Content>
-            <Text style={styles.header}>Test Result Details</Text>
-            <Text style={styles.label}>Result:</Text>
-            <Text style={styles.value}>{result.result}</Text>
-
-            <Text style={styles.label}>Entry Method:</Text>
-            <Text style={styles.value}>{result.entry_method}</Text>
-
-            <Text style={styles.label}>Date:</Text>
-            <Text style={styles.value}>
-              {new Date(result.timestamp).toLocaleString()}
+        <View style={styles.resultHeader}>
+          <View style={[styles.resultBadge, { backgroundColor: resultColor }]}>
+            <Text variant="headlineMedium" style={styles.resultText}>
+              {result.result || 'Unknown'}
             </Text>
+          </View>
+          <Text variant="titleMedium" style={styles.resultLabel}>
+            Protein Level
+          </Text>
+        </View>
+
+        <Card style={styles.detailsCard} mode="elevated">
+          <Card.Content>
+            <View style={styles.detailRow}>
+              <Text variant="bodyMedium" style={styles.detailLabel}>Date</Text>
+              <Text variant="bodyMedium" style={styles.detailValue}>
+                {new Date(result.timestamp).toLocaleString()}
+              </Text>
+            </View>
+            <View style={styles.divider} />
+
+            <View style={styles.detailRow}>
+              <Text variant="bodyMedium" style={styles.detailLabel}>Method</Text>
+              <Text variant="bodyMedium" style={styles.detailValue}>
+                {result.entry_method === 'auto' ? 'Camera Analysis' : 'Manual Entry'}
+              </Text>
+            </View>
 
             {result.notes && (
               <>
-                <Text style={styles.label}>Notes:</Text>
-                <Text style={styles.value}>{result.notes}</Text>
-              </>
-            )}
-
-            {result.image && (
-              <>
-                <Text style={styles.label}>Image:</Text>
-                {/* You might want to display the image here, but it requires more complex handling */}
-                <Text style={styles.value}>
-                  Image available (not displayed)
-                </Text>
+                <View style={styles.divider} />
+                <View style={styles.detailRow}>
+                  <Text variant="bodyMedium" style={styles.detailLabel}>Notes</Text>
+                  <Text variant="bodyMedium" style={styles.detailValue}>{result.notes}</Text>
+                </View>
               </>
             )}
           </Card.Content>
@@ -49,32 +65,60 @@ const TestResultScreen = ({ route }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F7FA',
   },
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
+    padding: 24,
+    alignItems: 'center',
   },
-  card: {
-    elevation: 2,
-    borderRadius: 10,
-    padding: 10,
+  resultHeader: {
+    alignItems: 'center',
+    marginBottom: 40,
+    marginTop: 20,
   },
-  header: {
-    fontSize: 22,
+  resultBadge: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  resultText: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
-    marginBottom: 20,
     textAlign: 'center',
   },
-  label: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 10,
+  resultLabel: {
+    color: '#444746',
   },
-  value: {
-    fontSize: 16,
-    marginBottom: 5,
+  detailsCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  detailLabel: {
+    color: '#747775',
+  },
+  detailValue: {
+    fontWeight: 'bold',
+    color: '#1A1C1E',
+    maxWidth: '60%',
+    textAlign: 'right',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E3E3',
   },
 });
 

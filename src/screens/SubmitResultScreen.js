@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import {
   TextInput as PaperTextInput,
   Button as PaperButton,
@@ -9,9 +10,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { postTestResult } from '../services/testService'; // Corrected service import
-import { LoadingContext, SnackbarContext } from '../../App';
+import { LoadingContext, SnackbarContext } from '../context/GlobalContext';
 
 const SubmitResultScreen = () => {
+  const navigation = useNavigation();
   const [date, setDate] = useState(new Date());
   const [proteinLevel, setProteinLevel] = useState('');
   const [notes, setNotes] = useState('');
@@ -19,33 +21,38 @@ const SubmitResultScreen = () => {
   const { isLoading, setIsLoading } = useContext(LoadingContext);
   const { showSnackbar } = useContext(SnackbarContext);
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!proteinLevel) {
       showSnackbar('Please select a protein level');
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const payload = {
-        result: proteinLevel,
-        entry_method: 'manual',
-        notes: notes,
-        timestamp: date.toISOString(), // Send date as ISO string
-      };
-      await postTestResult(payload);
-      showSnackbar('Test result submitted successfully!');
-      setProteinLevel('');
-      setNotes('');
-    } catch (error) {
-      console.error(
-        'Error submitting test result:',
-        error.response?.data || error.message,
-      );
-      showSnackbar('Failed to submit test result.');
-    } finally {
-      setIsLoading(false);
-    }
+    // 1. Construct Payload Locally
+    const payload = {
+      result: proteinLevel,
+      entry_method: 'manual',
+      notes: notes,
+      timestamp: date.toISOString(),
+      id: Date.now(), // Temporary ID for display purposes
+    };
+
+    // 2. Optimistic Update: Navigate Immediately
+    // We pass the payload directly to the result screen
+    navigation.navigate('TestResult', { result: payload });
+
+    // Reset form immediately
+    setProteinLevel('');
+    setNotes('');
+
+    // 3. Background API Call
+    postTestResult(payload)
+      .then(() => {
+        // Optional: Trigger a global refresh of data if needed
+      })
+      .catch((error) => {
+        showSnackbar('Failed to save result to server. It will be retried.');
+        // In a real app, we'd queue this for offline sync
+      });
   };
 
   return (

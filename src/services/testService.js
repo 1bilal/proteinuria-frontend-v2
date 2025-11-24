@@ -3,12 +3,10 @@ import api from './api';
 
 export const getTestResults = async () => {
   try {
-    console.log('➡️ Calling GET test-results/...');
     const response = await api.get('test-results/');
-    console.log('✅ Response from backend:', response.data);
     return response.data;
   } catch (error) {
-    console.error('❌ Error fetching test results:', error?.response?.data || error.message);
+    console.error('Error fetching test results:', error?.response?.data || error.message);
     throw error;
   }
 };

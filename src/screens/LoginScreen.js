@@ -5,20 +5,25 @@ import {
   TextInput as PaperTextInput,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { loginUser } from '../services/authService';
-import { LoadingContext, SnackbarContext } from '../../App';
+import { useAuth } from '../context/AuthContext';
+import { LoadingContext, SnackbarContext } from '../context/GlobalContext';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { setIsLoading } = useContext(LoadingContext);
+  const [isLoading, setIsLoading] = useState(false); // Local loading state for the button
+  const { login } = useAuth();
   const { showSnackbar } = useContext(SnackbarContext);
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      showSnackbar('Please enter both email and password.');
+      return;
+    }
     setIsLoading(true);
     try {
-      await loginUser(email, password);
-      navigation.replace('Home'); // or wherever your home screen is
+      await login(email, password);
+      // No need for navigation.replace(), the AppNavigator will handle it.
       showSnackbar('Login successful!');
     } catch (err) {
       showSnackbar('Invalid credentials. Please try again.');
@@ -49,7 +54,9 @@ const LoginScreen = ({ navigation }) => {
         <PaperButton
           mode="contained"
           onPress={handleLogin}
-          style={styles.button}>
+          style={styles.button}
+          loading={isLoading}
+          disabled={isLoading}>
           Login
         </PaperButton>
         <TouchableOpacity onPress={() => navigation.navigate('Signup')}>

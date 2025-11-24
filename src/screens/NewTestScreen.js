@@ -1,14 +1,14 @@
 import React, { useState, useContext } from 'react';
 import { View, Image, Alert, StyleSheet } from 'react-native';
 import {
-  Button as PaperButton,
-  ActivityIndicator,
+  Button,
   Text,
+  Card,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { postTestResult } from '../services/testService';
-import { LoadingContext, SnackbarContext } from '../../App';
+import { LoadingContext, SnackbarContext } from '../context/GlobalContext';
 
 const NewTestScreen = ({ navigation }) => {
   const [image, setImage] = useState(null);
@@ -49,16 +49,15 @@ const NewTestScreen = ({ navigation }) => {
     formData.append('entry_method', 'auto');
 
     // Debug output of FormData (text version)
-    console.log('📤 Submitting test with image:', image);
 
     setIsLoading(true);
     try {
-      await postTestResult(formData, true); // Ensure second arg is true for multipart
+      const response = await postTestResult(formData, true); // Ensure second arg is true for multipart
       showSnackbar('Test submitted successfully!');
-      navigation.navigate('Home');
+      navigation.navigate('TestResult', { result: response });
     } catch (error) {
       console.error(
-        '❌ Error submitting test:',
+        'Error submitting test:',
         error.response?.data || error.message || error,
       );
       showSnackbar('Failed to submit test. Please try again.');
@@ -70,23 +69,51 @@ const NewTestScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <PaperButton mode="contained" onPress={pickImage} style={styles.button}>
-          Take a Photo of the Test Strip
-        </PaperButton>
+        <Text variant="headlineSmall" style={styles.header}>
+          New Test
+        </Text>
+        <Text variant="bodyMedium" style={styles.subHeader}>
+          Align the test strip within the frame
+        </Text>
 
-        {image && (
-          <View style={styles.imageContainer}>
-            <Image source={{ uri: image }} style={styles.image} />
-            <PaperButton
-              mode="contained"
-              onPress={handleSubmit}
-              loading={isLoading}
+        <Card style={styles.cameraCard} mode="elevated" onPress={pickImage}>
+          <Card.Content style={styles.cameraContent}>
+            {image ? (
+              <Image source={{ uri: image }} style={styles.previewImage} />
+            ) : (
+              <View style={styles.placeholderContainer}>
+                <Text variant="titleMedium" style={styles.placeholderText}>
+                  Tap to Take Photo
+                </Text>
+                <Text variant="bodySmall" style={styles.placeholderSubText}>
+                  Ensure good lighting
+                </Text>
+              </View>
+            )}
+          </Card.Content>
+        </Card>
+
+        <View style={styles.footer}>
+          <Button
+            mode="contained"
+            onPress={image ? handleSubmit : pickImage}
+            loading={isLoading}
+            disabled={isLoading}
+            style={styles.actionButton}
+            contentStyle={styles.actionButtonContent}>
+            {image ? 'Analyze Test Strip' : 'Open Camera'}
+          </Button>
+
+          {image && (
+            <Button
+              mode="text"
+              onPress={pickImage}
               disabled={isLoading}
-              style={styles.button}>
-              Submit Test
-            </PaperButton>
-          </View>
-        )}
+              style={styles.retakeButton}>
+              Retake Photo
+            </Button>
+          )}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -95,27 +122,62 @@ const NewTestScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F7FA',
   },
   container: {
     flex: 1,
-    alignItems: 'center',
+    padding: 24,
+  },
+  header: {
+    fontWeight: 'bold',
+    color: '#004D40',
+    textAlign: 'center',
+  },
+  subHeader: {
+    textAlign: 'center',
+    color: '#5F6368',
+    marginBottom: 32,
+  },
+  cameraCard: {
+    flex: 1,
+    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
-    padding: 20,
+    overflow: 'hidden',
   },
-  button: {
-    marginVertical: 10,
-    width: '80%',
-  },
-  imageContainer: {
+  cameraContent: {
+    flex: 1,
+    padding: 0, // Remove padding to let image fill
+    justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: 20,
   },
-  image: {
-    width: 300,
-    height: 300,
-    resizeMode: 'contain',
-    marginBottom: 20,
+  previewImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  placeholderContainer: {
+    alignItems: 'center',
+  },
+  placeholderText: {
+    color: '#00897B',
+    fontWeight: 'bold',
+  },
+  placeholderSubText: {
+    color: '#747775',
+    marginTop: 4,
+  },
+  footer: {
+    gap: 12,
+  },
+  actionButton: {
+    borderRadius: 100,
+  },
+  actionButtonContent: {
+    paddingVertical: 8,
+  },
+  retakeButton: {
+    marginTop: 4,
   },
 });
 
